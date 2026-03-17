@@ -1,12 +1,12 @@
-# Multi-Cancer Detection System
+# Cancer Detection
 
-A deep learning-based system for detecting multiple types of cancer using transfer learning and Streamlit.
+AI-Powered Early Detection & Diagnostic System. A deep learning-based system for detecting multiple types of cancer using transfer learning and Streamlit.
 
 ## Features
-- Detects Breast, Lung, Skin, and other cancer types.
-- Uses Transfer Learning with ResNet50/MobileNetV2.
+- Detects Lung and Skin cancer (Skin lesion classification using HAM10000).
+- Uses Transfer Learning and Random Forest models.
 - Interactive Streamlit dashboard for real-time inference.
-- Comprehensive evaluation metrics (Accuracy, Precision, Recall, F1-Score).
+- Git LFS support for large model files.
 
 ## Project Structure
 ```
