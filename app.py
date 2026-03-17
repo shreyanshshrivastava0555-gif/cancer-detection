@@ -225,11 +225,34 @@ if search_clicked or (uploaded_file is not None and user_description):
                         st.progress(float(prob), text=f"{name}: {prob:.2%}")
                     
                     st.write("Does this result match the patient's record?")
+                    
+                    # Inject custom CSS for these specific buttons
+                    st.markdown("""
+                    <style>
+                    div[data-testid="stButton"] button:has(div:contains("Yes")) {
+                        background-color: #28a745 !important;
+                        color: white !important;
+                        border-color: #28a745 !important;
+                    }
+                    div[data-testid="stButton"] button:has(div:contains("Yes")):hover {
+                        background-color: #218838 !important;
+                    }
+                    div[data-testid="stButton"] button:has(div:contains("No")) {
+                        background-color: #dc3545 !important;
+                        color: white !important;
+                        border-color: #dc3545 !important;
+                    }
+                    div[data-testid="stButton"] button:has(div:contains("No")):hover {
+                        background-color: #c82333 !important;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
+                    
                     btn_col1, btn_col2, btn_spacer = st.columns([1, 1, 4])
                     with btn_col1:
-                        st.button("Yes", use_container_width=True, key="btn_yes")
+                        st.button("Yes", use_container_width=True, key="btn_yes", type="primary")
                     with btn_col2:
-                        st.button("No", use_container_width=True, key="btn_no")
+                        st.button("No", use_container_width=True, key="btn_no", type="primary")
                 elif model and img_array is None:
                     st.warning("Model loaded, but no clinical image provided for visual analysis.")
                     status.update(label="Incomplete Data", state="error", expanded=True)
