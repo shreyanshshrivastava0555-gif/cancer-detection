@@ -49,10 +49,8 @@ CLASS_NAMES = [
 ]
 IMG_SIZE = 64  # Must match Colab training size
 
-# Title & Tagline
-st.markdown("<h1 style='text-align: center; font-size: 3.5em; margin-bottom: 0;'>Skin Cancer Detection</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-size: 1.4em; color: gray; margin-top: 10px;'>AI-powered skin lesion classification using HAM10000 dataset.</p>", unsafe_allow_html=True)
-st.markdown("<br>", unsafe_allow_html=True)
+# Title
+st.markdown("<h1 style='text-align: center; font-size: 3.5em; margin-bottom: 20px;'>Cancer Detection</h1>", unsafe_allow_html=True)
 
 # Custom CSS for the Chatbot Experience
 st.markdown("""
