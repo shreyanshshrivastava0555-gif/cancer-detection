@@ -230,20 +230,20 @@ if search_clicked or (uploaded_file is not None and user_description):
                     st.markdown("""
                     <style>
                     div[data-testid="stButton"] button:has(div:contains("Yes")) {
-                        background-color: #28a745 !important;
+                        background-color: #007bff !important;
                         color: white !important;
-                        border-color: #28a745 !important;
+                        border-color: #007bff !important;
                     }
                     div[data-testid="stButton"] button:has(div:contains("Yes")):hover {
-                        background-color: #218838 !important;
+                        background-color: #0056b3 !important;
                     }
                     div[data-testid="stButton"] button:has(div:contains("No")) {
-                        background-color: #dc3545 !important;
+                        background-color: #007bff !important;
                         color: white !important;
-                        border-color: #dc3545 !important;
+                        border-color: #007bff !important;
                     }
                     div[data-testid="stButton"] button:has(div:contains("No")):hover {
-                        background-color: #c82333 !important;
+                        background-color: #0056b3 !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
