@@ -235,7 +235,7 @@ if search_clicked or (uploaded_file is not None and user_description):
                         border-color: #007bff !important;
                     }
                     div[data-testid="stButton"] button:has(div:contains("Yes")):hover {
-                        background-color: #0056b3 !important;
+                        background-color: #0069d9 !important;
                     }
                     div[data-testid="stButton"] button:has(div:contains("No")) {
                         background-color: #007bff !important;
@@ -243,7 +243,7 @@ if search_clicked or (uploaded_file is not None and user_description):
                         border-color: #007bff !important;
                     }
                     div[data-testid="stButton"] button:has(div:contains("No")):hover {
-                        background-color: #0056b3 !important;
+                        background-color: #0069d9 !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
