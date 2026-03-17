@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA | Diagnostic Matrix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=Manrope:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030305;
+            --surface-color: #0c0c14;
+            --surface-light: #161624;
+            --primary: #00ffcc;
+            --primary-glow: rgba(0, 255, 204, 0.4);
+            --secondary: #7b2cbf;
+            --accent: #4f8fff;
+            --text-main: #f0f0f5;
+            --text-muted: #8a8a9e;
+            --border-color: rgba(0, 255, 204, 0.15);
+            --danger: #ff0055;
+            --warn: #ffaa00;
+            --safe: #00e676;
+
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'Manrope', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(123, 44, 191, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 255, 204, 0.05), transparent 25%);
+        }
+
+        .grid-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1; pointer-events: none;
+        }
+
+        .dashboard {
+            max-width: 1400px; margin: 0 auto; padding: 2rem 4rem;
+            min-height: 100vh; display: flex; flex-direction: column;
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            font-family: var(--font-display); font-size: 2rem; font-weight: 800;
+            letter-spacing: 2px; color: #fff; display: flex; align-items: flex-end; gap: 10px;
+        }
+        .logo span { font-size: 0.9rem; color: var(--primary); font-family: var(--font-body); letter-spacing: 4px; opacity: 0.8; margin-bottom: 6px; }
+
+        .status-badge {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(0, 255, 204, 0.05); padding: 8px 16px;
+            border: 1px solid var(--border-color); border-radius: 20px;
+            font-size: 0.8rem; letter-spacing: 2px; color: var(--primary);
+        }
+
+        .pulse {
+            width: 8px; height: 8px; background: var(--primary);
+            border-radius: 50%; box-shadow: 0 0 10px var(--primary);
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%   { opacity: 1; transform: scale(1); }
+            50%  { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* Tabs                                                                */
+        /* ------------------------------------------------------------------ */
+        .tab-bar {
+            display: flex; gap: 4px; margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            font-family: var(--font-display); font-size: 0.85rem; letter-spacing: 3px;
+            font-weight: 600; text-transform: uppercase; padding: 10px 28px;
+            background: transparent; color: var(--text-muted);
+            border: none; border-bottom: 2px solid transparent;
+            cursor: pointer; transition: all 0.25s ease;
+        }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .tab-panel { display: none; flex-grow: 1; }
+        .tab-panel.active { display: flex; flex-direction: column; }
+
+        /* ------------------------------------------------------------------ */
+        /* Skin Cancer Tab – identical layout to original                      */
+        /* ------------------------------------------------------------------ */
+        .content-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; flex-grow: 1; }
+
+        .scanner-container {
+            position: relative; aspect-ratio: 1;
+            border: 1px dashed var(--border-color); border-radius: 4px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(12, 12, 20, 0.5); backdrop-filter: blur(10px);
+            cursor: pointer; transition: all 0.4s ease; overflow: hidden;
+        }
+        .scanner-container:hover, .scanner-container.drag-active {
+            border-color: var(--primary);
+            box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05);
+            background: rgba(12, 12, 20, 0.8);
+        }
+
+        .bracket { position: absolute; width: 20px; height: 20px; border-color: var(--primary); border-style: solid; transition: all 0.3s ease; opacity: 0.5; }
+        .scanner-container:hover .bracket { opacity: 1; width: 30px; height: 30px; }
+        .tl { top: -1px; left: -1px;   border-width: 2px 0 0 2px; }
+        .tr { top: -1px; right: -1px;  border-width: 2px 2px 0 0; }
+        .bl { bottom: -1px; left: -1px;  border-width: 0 0 2px 2px; }
+        .br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        .upload-content { text-align: center; pointer-events: none; z-index: 2; }
+        .icon-cross { font-size: 3rem; color: var(--primary); margin-bottom: 1.5rem; opacity: 0.5; }
+        .upload-content h2 { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: 4px; margin-bottom: 1rem; }
+        .upload-content p { color: var(--text-muted); font-size: 0.9rem; letter-spacing: 1px; max-width: 250px; }
+
+        #image-preview {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1; opacity: 0.8; filter: contrast(1.1) saturate(1.2);
+        }
+
+        .scanning-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,204,0.1) 2px, rgba(0,255,204,0.05) 4px);
+            z-index: 3; display: flex; align-items: center; justify-content: center;
+        }
+        .scanner-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--primary); box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary);
+            animation: scan-anim 2s linear infinite;
+        }
+        @keyframes scan-anim { 0% { top: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        .scanning-overlay span {
+            background: rgba(12,12,20,0.9); padding: 8px 16px;
+            border: 1px solid var(--primary); color: var(--primary);
+            font-family: var(--font-display); letter-spacing: 4px;
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        /* Results panel */
+        .results-panel {
+            background: var(--surface-light); border: 1px solid rgba(255,255,255,0.05);
+            padding: 3rem; height: 100%; display: flex; flex-direction: column; position: relative;
+        }
+        .results-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary)); opacity: 0.3;
+        }
+
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 3rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem;
+        }
+        .panel-header h3 { font-family: var(--font-display); letter-spacing: 5px; font-size: 1.1rem; color: #fff; }
+        .panel-header .report-id { font-family: monospace; color: var(--text-muted); font-size: 0.8rem; letter-spacing: 2px; }
+
+        .diagnosis-container { margin-bottom: 3rem; display: flex; align-items: center; justify-content: space-between; }
+        .diagnosis-info .label { font-size: 0.8rem; letter-spacing: 3px; color: var(--primary); margin-bottom: 10px; }
+        .diagnosis-info h1 { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.1; margin-bottom: 10px; text-transform: uppercase; }
+
+        .confidence-circle { width: 120px; height: 120px; position: relative; }
+        .circular-chart { display: block; margin: 0 auto; max-width: 100%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 2.5; }
+        .circle {
+            fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linecap: round;
+            filter: drop-shadow(0 0 4px var(--primary-glow));
+            transition: stroke-dasharray 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .percentage {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: var(--font-display); font-size: 1.8rem; font-weight: 600; color: #fff;
+        }
+
+        .prob-list { display: flex; flex-direction: column; gap: 1.2rem; flex-grow: 1; }
+        .prob-item { display: flex; align-items: center; gap: 20px; }
+        .prob-label { width: 180px; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .prob-bar-container { flex-grow: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; position: relative; }
+        .prob-bar { height: 100%; background: var(--text-muted); width: 0%; transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .prob-item.high   .prob-bar { background: var(--danger); box-shadow: 0 0 10px rgba(255, 0, 85, 0.5); }
+        .prob-item.medium .prob-bar { background: var(--warn); }
+        .prob-value { width: 50px; text-align: right; font-family: monospace; font-size: 0.9rem; color: #fff; }
+
+        /* ------------------------------------------------------------------ */
+        /* Lung Cancer Tab                                                      */
+        /* ------------------------------------------------------------------ */
+        .lung-wrapper {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; flex-grow: 1;
+        }
+
+        .lung-form-panel {
+            background: rgba(12,12,20,0.5); backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color); border-radius: 4px; padding: 2rem;
+            overflow-y: auto; max-height: 75vh;
+        }
+
+        .lung-form-panel h2 {
+            font-family: var(--font-display); font-size: 1.2rem; letter-spacing: 4px;
+            color: var(--accent); margin-bottom: 1.5rem; padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(79,143,255,0.2);
+        }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+
+        .form-field { display: flex; flex-direction: column; gap: 6px; }
+        .form-field label {
+            font-size: 0.75rem; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase;
+        }
+        .form-field input[type="number"] {
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);
+            border-radius: 4px; color: var(--text-main); font-family: var(--font-body);
+            font-size: 0.95rem; padding: 8px 12px; width: 100%;
+            transition: border-color 0.2s;
+        }
+        .form-field input[type="number"]:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(79,143,255,0.15);
+        }
+
+        .form-field input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 4px;
+            background: rgba(255,255,255,0.08); border-radius: 2px; outline: none;
+        }
+        .form-field input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px;
+            border-radius: 50%; background: var(--accent); cursor: pointer;
+            box-shadow: 0 0 6px rgba(79,143,255,0.5);
+        }
+
+        .field-value {
+            font-size: 0.85rem; color: var(--accent); font-family: monospace;
+            text-align: right;
+        }
+
+        .assess-btn {
+            width: 100%; padding: 14px; margin-top: 0.5rem;
+            background: linear-gradient(135deg, rgba(79,143,255,0.15), rgba(0,255,204,0.1));
+            border: 1px solid var(--accent); border-radius: 4px;
+            color: var(--accent); font-family: var(--font-display);
+            font-size: 0.9rem; letter-spacing: 4px; cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .assess-btn:hover {
+            background: linear-gradient(135deg, rgba(79,143,255,0.3), rgba(0,255,204,0.2));
+            box-shadow: 0 0 20px rgba(79, 143, 255, 0.3);
+        }
+        .assess-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Lung results panel */
+        .lung-result-panel {
+            background: var(--surface-light); border: 1px solid rgba(255,255,255,0.05);
+            padding: 3rem; display: flex; flex-direction: column; position: relative; border-radius: 4px;
+        }
+        .lung-result-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--accent), var(--secondary)); opacity: 0.3;
+        }
+
+        .lung-idle {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; opacity: 0.35; flex-grow: 1;
+        }
+        .lung-idle svg { width: 60px; height: 60px; stroke: currentColor; fill: none; stroke-width: 1; margin-bottom: 20px; animation: rotate 20s linear infinite; }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        .lung-idle p { font-family: var(--font-display); letter-spacing: 5px; font-size: 0.9rem; }
+
+        .lung-results { display: none; flex-direction: column; flex-grow: 1; }
+
+        .risk-badge {
+            display: inline-block; padding: 10px 28px; border-radius: 30px;
+            font-family: var(--font-display); font-size: 2rem; font-weight: 800;
+            letter-spacing: 4px; text-transform: uppercase; margin-bottom: 1rem;
+            transition: all 0.5s ease;
+        }
+        .risk-badge.low    { background: rgba(0,230,118,0.15); color: var(--safe); border: 2px solid var(--safe); box-shadow: 0 0 30px rgba(0,230,118,0.2); }
+        .risk-badge.medium { background: rgba(255,170,0,0.15);  color: var(--warn); border: 2px solid var(--warn); box-shadow: 0 0 30px rgba(255,170,0,0.2); }
+        .risk-badge.high   { background: rgba(255,0,85,0.15);   color: var(--danger); border: 2px solid var(--danger); box-shadow: 0 0 30px rgba(255,0,85,0.2); }
+
+        .lung-conf-row {
+            display: flex; align-items: center; gap: 1.5rem;
+            margin-bottom: 2rem; padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .lung-prob-bars { display: flex; flex-direction: column; gap: 1rem; flex-grow: 1; }
+        .lung-prob-item { display: flex; align-items: center; gap: 14px; }
+        .lung-prob-label { width: 80px; font-size: 0.8rem; letter-spacing: 2px; color: var(--text-muted); }
+        .lung-prob-label.label-low    { color: var(--safe); }
+        .lung-prob-label.label-medium { color: var(--warn); }
+        .lung-prob-label.label-high   { color: var(--danger); }
+        .lung-prob-bar-track { flex-grow: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+        .lung-prob-fill { height: 100%; width: 0%; border-radius: 3px; transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .lung-prob-fill.fill-low    { background: var(--safe); }
+        .lung-prob-fill.fill-medium { background: var(--warn); }
+        .lung-prob-fill.fill-high   { background: var(--danger); }
+        .lung-prob-val { width: 50px; text-align: right; font-family: monospace; font-size: 0.85rem; }
+
+        /* Shared states */
+        .hidden { display: none !important; }
+
+        .idle-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; opacity: 0.4; flex-grow: 1;
+        }
+        .idle-state svg { width: 60px; height: 60px; stroke: currentColor; fill: none; stroke-width: 1; margin-bottom: 20px; animation: rotate 20s linear infinite; }
+        .idle-state p { font-family: var(--font-display); letter-spacing: 5px; font-size: 0.9rem; }
+
+        .results-content { display: flex; flex-direction: column; flex-grow: 1; }
+
+        .error-message {
+            color: var(--danger); background: rgba(255,0,85,0.1);
+            border: 1px solid var(--danger); padding: 1rem; margin-top: 1rem;
+            border-radius: 4px; font-family: monospace;
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* Hint box                                                            */
+        /* ------------------------------------------------------------------ */
+        .hint-box {
+            background: rgba(79,143,255,0.06); border: 1px solid rgba(79,143,255,0.2);
+            border-radius: 4px; padding: 1rem 1.5rem; margin-top: 2rem;
+            font-size: 0.82rem; color: var(--text-muted); line-height: 1.7;
+        }
+        .hint-box strong { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <main class="dashboard">
+        <header>
+            <div class="logo">AURA<span>[SYS]</span></div>
+            <div class="status-badge">
+                <div class="pulse"></div>
+                <span id="status-text">SYSTEM ONLINE</span>
+            </div>
+        </header>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab-skin-btn" onclick="switchTab('skin')">🔬 Skin Cancer Scanner</button>
+            <button class="tab-btn" id="tab-lung-btn" onclick="switchTab('lung')">🫁 Lung Cancer Risk</button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 1 – Skin Cancer                                          -->
+        <!-- ============================================================ -->
+        <div class="tab-panel active" id="tab-skin">
+            <div class="content-wrapper">
+                <!-- Left: Upload -->
+                <section class="scanner-section">
+                    <div class="scanner-container" id="drop-zone">
+                        <div class="bracket tl"></div>
+                        <div class="bracket tr"></div>
+                        <div class="bracket bl"></div>
+                        <div class="bracket br"></div>
+
+                        <input type="file" id="file-input" accept="image/*" hidden>
+
+                        <div class="upload-content" id="upload-content">
+                            <div class="icon-cross">✛</div>
+                            <h2>INITIALIZE SCAN</h2>
+                            <p>Drag & drop biological sample or click to access local matrix</p>
+                        </div>
+
+                        <img id="image-preview" class="hidden" alt="Sample">
+
+                        <div class="scanning-overlay hidden" id="scanning-overlay">
+                            <div class="scanner-line"></div>
+                            <span id="scan-status-text">ANALYZING TISSUE</span>
+                        </div>
+                    </div>
+                    <div id="error-container" class="hidden error-message"></div>
+                </section>
+
+                <!-- Right: Results -->
+                <section class="results-panel">
+                    <div class="panel-header">
+                        <h3>DIAGNOSTIC REPORT</h3>
+                        <span class="report-id">ID: <span id="report-id-text">AWAITING_DATA</span></span>
+                    </div>
+
+                    <div class="idle-state" id="idle-state">
+                        <svg viewBox="0 0 100 100">
+                            <polygon points="50 5, 95 95, 5 95"/>
+                            <circle cx="50" cy="65" r="10"/>
+                        </svg>
+                        <p>AWAITING INPUT STREAM</p>
+                    </div>
+
+                    <div class="results-content hidden" id="results-content">
+                        <div class="diagnosis-container">
+                            <div class="diagnosis-info">
+                                <div class="label">PRIMARY FINDING</div>
+                                <h1 id="diagnosis-name">--</h1>
+                            </div>
+                            <div class="confidence-circle">
+                                <svg viewBox="0 0 36 36" class="circular-chart">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path class="circle" id="confidence-path" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <div class="percentage"><span id="confidence-text">0</span>%</div>
+                            </div>
+                        </div>
+
+                        <div class="prob-list" id="prob-list"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 2 – Lung Cancer Risk                                     -->
+        <!-- ============================================================ -->
+        <div class="tab-panel" id="tab-lung">
+            <div class="lung-wrapper">
+                <!-- Left: Form -->
+                <div class="lung-form-panel">
+                    <h2>PATIENT DATA INPUT</h2>
+
+                    <div class="form-grid">
+                        <!-- Age -->
+                        <div class="form-field" style="grid-column: span 2;">
+                            <label>Age (years)</label>
+                            <input type="number" id="f-age" min="1" max="90" value="35">
+                        </div>
+
+                        <!-- Gender -->
+                        <div class="form-field" style="grid-column: span 2;">
+                            <label>Gender (1 = Male, 2 = Female)</label>
+                            <input type="number" id="f-gender" min="1" max="2" value="1">
+                        </div>
+                    </div>
+
+                    <p style="font-size:0.78rem; color:var(--text-muted); letter-spacing:1.5px; margin-bottom:1rem;">RISK FACTORS &amp; SYMPTOMS (scale 1–9)</p>
+
+                    <div class="form-grid">
+                        <!-- All 1-9 features as sliders -->
+                        <div class="form-field">
+                            <label>Air Pollution <span class="field-value" id="v-air">3</span></label>
+                            <input type="range" id="f-air" min="1" max="9" value="3" oninput="document.getElementById('v-air').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Alcohol Use <span class="field-value" id="v-alcohol">3</span></label>
+                            <input type="range" id="f-alcohol" min="1" max="9" value="3" oninput="document.getElementById('v-alcohol').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Dust Allergy <span class="field-value" id="v-dust">3</span></label>
+                            <input type="range" id="f-dust" min="1" max="9" value="3" oninput="document.getElementById('v-dust').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Occupational Hazards <span class="field-value" id="v-occ">3</span></label>
+                            <input type="range" id="f-occ" min="1" max="9" value="3" oninput="document.getElementById('v-occ').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Genetic Risk <span class="field-value" id="v-genetic">3</span></label>
+                            <input type="range" id="f-genetic" min="1" max="9" value="3" oninput="document.getElementById('v-genetic').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Chronic Lung Disease <span class="field-value" id="v-lung">3</span></label>
+                            <input type="range" id="f-lung" min="1" max="9" value="3" oninput="document.getElementById('v-lung').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Balanced Diet <span class="field-value" id="v-diet">5</span></label>
+                            <input type="range" id="f-diet" min="1" max="9" value="5" oninput="document.getElementById('v-diet').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Obesity <span class="field-value" id="v-obesity">3</span></label>
+                            <input type="range" id="f-obesity" min="1" max="9" value="3" oninput="document.getElementById('v-obesity').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Smoking <span class="field-value" id="v-smoking">2</span></label>
+                            <input type="range" id="f-smoking" min="1" max="9" value="2" oninput="document.getElementById('v-smoking').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Passive Smoker <span class="field-value" id="v-passive">2</span></label>
+                            <input type="range" id="f-passive" min="1" max="9" value="2" oninput="document.getElementById('v-passive').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Chest Pain <span class="field-value" id="v-chest">2</span></label>
+                            <input type="range" id="f-chest" min="1" max="9" value="2" oninput="document.getElementById('v-chest').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Coughing of Blood <span class="field-value" id="v-cough">2</span></label>
+                            <input type="range" id="f-cough" min="1" max="9" value="2" oninput="document.getElementById('v-cough').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Fatigue <span class="field-value" id="v-fatigue">3</span></label>
+                            <input type="range" id="f-fatigue" min="1" max="9" value="3" oninput="document.getElementById('v-fatigue').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Weight Loss <span class="field-value" id="v-weight">3</span></label>
+                            <input type="range" id="f-weight" min="1" max="9" value="3" oninput="document.getElementById('v-weight').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Shortness of Breath <span class="field-value" id="v-breath">2</span></label>
+                            <input type="range" id="f-breath" min="1" max="9" value="2" oninput="document.getElementById('v-breath').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Wheezing <span class="field-value" id="v-wheeze">2</span></label>
+                            <input type="range" id="f-wheeze" min="1" max="9" value="2" oninput="document.getElementById('v-wheeze').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Swallowing Difficulty <span class="field-value" id="v-swallow">2</span></label>
+                            <input type="range" id="f-swallow" min="1" max="9" value="2" oninput="document.getElementById('v-swallow').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Clubbing of Finger Nails <span class="field-value" id="v-club">2</span></label>
+                            <input type="range" id="f-club" min="1" max="9" value="2" oninput="document.getElementById('v-club').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Frequent Cold <span class="field-value" id="v-cold">2</span></label>
+                            <input type="range" id="f-cold" min="1" max="9" value="2" oninput="document.getElementById('v-cold').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Dry Cough <span class="field-value" id="v-drycough">3</span></label>
+                            <input type="range" id="f-drycough" min="1" max="9" value="3" oninput="document.getElementById('v-drycough').textContent=this.value">
+                        </div>
+                        <div class="form-field">
+                            <label>Snoring <span class="field-value" id="v-snoring">3</span></label>
+                            <input type="range" id="f-snoring" min="1" max="9" value="3" oninput="document.getElementById('v-snoring').textContent=this.value">
+                        </div>
+                    </div>
+
+                    <button class="assess-btn" id="assess-btn" onclick="assessLungRisk()">ASSESS RISK</button>
+                    <div id="lung-error" class="hidden error-message" style="margin-top:1rem;"></div>
+
+                    <div class="hint-box">
+                        <strong>Scale guide:</strong> 1 = None/Very low &nbsp;|&nbsp; 5 = Moderate &nbsp;|&nbsp; 9 = Severe/Very high<br>
+                        For <strong>Gender</strong>: 1 = Male, 2 = Female
+                    </div>
+                </div>
+
+                <!-- Right: Lung Results -->
+                <div class="lung-result-panel">
+                    <div class="panel-header">
+                        <h3>RISK ASSESSMENT</h3>
+                        <span class="report-id">ID: <span id="lung-report-id">AWAITING_DATA</span></span>
+                    </div>
+
+                    <div class="lung-idle" id="lung-idle">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40"/>
+                            <circle cx="50" cy="50" r="25"/>
+                            <circle cx="50" cy="50" r="10"/>
+                        </svg>
+                        <p>ENTER PATIENT DATA</p>
+                    </div>
+
+                    <div class="lung-results" id="lung-results">
+                        <div style="margin-bottom:1.5rem;">
+                            <div style="font-size:0.8rem; letter-spacing:3px; color:var(--accent); margin-bottom:12px;">RISK LEVEL</div>
+                            <div class="risk-badge" id="risk-badge">--</div>
+                        </div>
+
+                        <div class="lung-conf-row">
+                            <div>
+                                <div style="font-size:0.75rem; letter-spacing:2px; color:var(--text-muted); margin-bottom:6px;">CONFIDENCE</div>
+                                <div style="font-family:var(--font-display); font-size:2rem;" id="lung-conf-text">--</div>
+                            </div>
+                        </div>
+
+                        <div style="font-size:0.75rem; letter-spacing:2px; color:var(--text-muted); margin-bottom:1rem;">PROBABILITY BREAKDOWN</div>
+                        <div class="lung-prob-bars">
+                            <div class="lung-prob-item">
+                                <div class="lung-prob-label label-low">LOW</div>
+                                <div class="lung-prob-bar-track"><div class="lung-prob-fill fill-low" id="bar-low"></div></div>
+                                <div class="lung-prob-val" id="val-low">0%</div>
+                            </div>
+                            <div class="lung-prob-item">
+                                <div class="lung-prob-label label-medium">MEDIUM</div>
+                                <div class="lung-prob-bar-track"><div class="lung-prob-fill fill-medium" id="bar-medium"></div></div>
+                                <div class="lung-prob-val" id="val-medium">0%</div>
+                            </div>
+                            <div class="lung-prob-item">
+                                <div class="lung-prob-label label-high">HIGH</div>
+                                <div class="lung-prob-bar-track"><div class="lung-prob-fill fill-high" id="bar-high"></div></div>
+                                <div class="lung-prob-val" id="val-high">0%</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:2rem; padding-top:2rem; border-top:1px solid rgba(255,255,255,0.05); font-size:0.78rem; color:var(--text-muted); line-height:1.8;">
+                            ⚠ This assessment is for informational purposes only and does not constitute medical advice. Please consult a qualified healthcare professional.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ================================================================
+        // Tab switching
+        // ================================================================
+        function switchTab(tab) {
+            ['skin','lung'].forEach(t => {
+                document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+                document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
+            });
+        }
+
+        // ================================================================
+        // SKIN CANCER – original logic
+        // ================================================================
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const imagePreview = document.getElementById('image-preview');
+        const uploadContent = document.getElementById('upload-content');
+        const scanningOverlay = document.getElementById('scanning-overlay');
+        const idleState = document.getElementById('idle-state');
+        const resultsContent = document.getElementById('results-content');
+        const probList = document.getElementById('prob-list');
+        const errorContainer = document.getElementById('error-container');
+
+        let isProcessing = false;
+
+        dropZone.addEventListener('click', () => { if (!isProcessing) fileInput.click(); });
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-active'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-active'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('drag-active');
+            if (isProcessing) return;
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => { if (e.target.files && e.target.files.length > 0) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) { showError("INVALID DATA TYPE. BIOLOGICAL IMAGE REQUIRED."); return; }
+            errorContainer.classList.add('hidden');
+            idleState.classList.add('hidden');
+            resultsContent.classList.add('hidden');
+            const reader = new FileReader();
+            reader.onload = e => {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                uploadContent.classList.add('hidden');
+                startInference(file);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function startInference(file) {
+            isProcessing = true;
+            scanningOverlay.classList.remove('hidden');
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = "UPLINK ACTIVE"; statusText.style.color = "#ffaa00";
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const apiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://' + window.location.host + '/predict'
+                    : '/predict';
+
+                const response = await fetch(apiUrl, { method: 'POST', body: formData });
+                if (!response.ok) { const err = await response.json(); throw new Error(err.detail || "SERVER_FAULT"); }
+                const data = await response.json();
+                setTimeout(() => displayResults(data), 800);
+            } catch (error) {
+                console.error(error);
+                showError(`COMM_FAILURE: ${error.message}`);
+                scanningOverlay.classList.add('hidden');
+                statusText.textContent = "SYSTEM DEGRADED"; statusText.style.color = "var(--danger)";
+                isProcessing = false;
+            }
+        }
+
+        function displayResults(data) {
+            scanningOverlay.classList.add('hidden');
+            resultsContent.classList.remove('hidden');
+            isProcessing = false;
+            document.getElementById('status-text').textContent = "SYSTEM ONLINE";
+            document.getElementById('status-text').style.color = "var(--primary)";
+            document.getElementById('report-id-text').textContent = Math.random().toString(36).substring(2, 10).toUpperCase();
+            document.getElementById('diagnosis-name').innerHTML = data.prediction.replace(' ', '<br>');
+
+            const confPercent = Math.round(data.confidence * 100);
+            const confPath = document.getElementById('confidence-path');
+            confPath.style.strokeDasharray = '0, 100';
+            document.getElementById('confidence-text').textContent = "0";
+            setTimeout(() => {
+                confPath.style.strokeDasharray = `${confPercent}, 100`;
+                animateValue(document.getElementById('confidence-text'), 0, confPercent, 1000);
+                if (confPercent > 80 && ['Melanoma', 'Basal Cell Carcinoma', 'Actinic Keratosis'].includes(data.prediction)) {
+                    confPath.style.stroke = "var(--danger)";
+                    document.getElementById('diagnosis-name').style.color = "var(--danger)";
+                } else {
+                    confPath.style.stroke = "var(--primary)";
+                    document.getElementById('diagnosis-name').style.color = "var(--text-main)";
+                }
+            }, 100);
+
+            probList.innerHTML = '';
+            data.probabilities.forEach((item, index) => {
+                const probPercent = (item.probability * 100).toFixed(1);
+                let severityClass = '';
+                if (item.probability > 0.5) severityClass = 'high';
+                else if (item.probability > 0.1) severityClass = 'medium';
+                const probItem = document.createElement('div');
+                probItem.className = `prob-item ${severityClass}`;
+                probItem.innerHTML = `
+                    <div class="prob-label">${item.class.toUpperCase()}</div>
+                    <div class="prob-bar-container"><div class="prob-bar" style="transition-delay: ${index * 0.1}s"></div></div>
+                    <div class="prob-value">${probPercent}%</div>`;
+                probList.appendChild(probItem);
+                setTimeout(() => { probItem.querySelector('.prob-bar').style.width = `${probPercent}%`; }, 50);
+            });
+        }
+
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = timestamp => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function showError(msg) {
+            errorContainer.textContent = msg; errorContainer.classList.remove('hidden');
+            idleState.classList.remove('hidden');
+            imagePreview.classList.add('hidden'); uploadContent.classList.remove('hidden');
+        }
+
+        // ================================================================
+        // LUNG CANCER – risk assessment
+        // ================================================================
+        async function assessLungRisk() {
+            const btn = document.getElementById('assess-btn');
+            const lungError = document.getElementById('lung-error');
+            const statusText = document.getElementById('status-text');
+
+            btn.disabled = true;
+            lungError.classList.add('hidden');
+            statusText.textContent = "PROCESSING RISK DATA"; statusText.style.color = "#ffaa00";
+
+            const payload = {
+                Age:                    parseInt(document.getElementById('f-age').value),
+                Gender:                 parseInt(document.getElementById('f-gender').value),
+                Air_Pollution:          parseInt(document.getElementById('f-air').value),
+                Alcohol_use:            parseInt(document.getElementById('f-alcohol').value),
+                Dust_Allergy:           parseInt(document.getElementById('f-dust').value),
+                OccuPational_Hazards:   parseInt(document.getElementById('f-occ').value),
+                Genetic_Risk:           parseInt(document.getElementById('f-genetic').value),
+                chronic_Lung_Disease:   parseInt(document.getElementById('f-lung').value),
+                Balanced_Diet:          parseInt(document.getElementById('f-diet').value),
+                Obesity:                parseInt(document.getElementById('f-obesity').value),
+                Smoking:                parseInt(document.getElementById('f-smoking').value),
+                Passive_Smoker:         parseInt(document.getElementById('f-passive').value),
+                Chest_Pain:             parseInt(document.getElementById('f-chest').value),
+                Coughing_of_Blood:      parseInt(document.getElementById('f-cough').value),
+                Fatigue:                parseInt(document.getElementById('f-fatigue').value),
+                Weight_Loss:            parseInt(document.getElementById('f-weight').value),
+                Shortness_of_Breath:    parseInt(document.getElementById('f-breath').value),
+                Wheezing:               parseInt(document.getElementById('f-wheeze').value),
+                Swallowing_Difficulty:  parseInt(document.getElementById('f-swallow').value),
+                Clubbing_of_Finger_Nails: parseInt(document.getElementById('f-club').value),
+                Frequent_Cold:          parseInt(document.getElementById('f-cold').value),
+                Dry_Cough:              parseInt(document.getElementById('f-drycough').value),
+                Snoring:                parseInt(document.getElementById('f-snoring').value),
+            };
+
+            try {
+                const apiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://' + window.location.host + '/predict-lung-cancer'
+                    : '/predict-lung-cancer';
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || "SERVER_FAULT");
+                }
+
+                const data = await response.json();
+                displayLungResults(data);
+            } catch (error) {
+                console.error(error);
+                lungError.textContent = `ERROR: ${error.message}`;
+                lungError.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                statusText.textContent = "SYSTEM ONLINE"; statusText.style.color = "var(--primary)";
+            }
+        }
+
+        function displayLungResults(data) {
+            const idle = document.getElementById('lung-idle');
+            const results = document.getElementById('lung-results');
+            const badge = document.getElementById('risk-badge');
+            const confText = document.getElementById('lung-conf-text');
+
+            idle.style.display = 'none';
+            results.style.display = 'flex';
+
+            document.getElementById('lung-report-id').textContent = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+            // Badge
+            badge.textContent = data.level.toUpperCase();
+            badge.className = 'risk-badge ' + data.level.toLowerCase();
+
+            // Confidence
+            confText.textContent = (data.confidence * 100).toFixed(1) + '%';
+
+            // Probability bars (reset then animate)
+            ['low','medium','high'].forEach(l => {
+                document.getElementById('bar-' + l).style.width = '0%';
+                document.getElementById('val-' + l).textContent = '0%';
+            });
+
+            setTimeout(() => {
+                const p = data.probabilities;
+                [
+                    { key: 'low',    val: p.Low    },
+                    { key: 'medium', val: p.Medium },
+                    { key: 'high',   val: p.High   },
+                ].forEach(({ key, val }) => {
+                    const pct = (val * 100).toFixed(1);
+                    document.getElementById('bar-' + key).style.width = pct + '%';
+                    document.getElementById('val-' + key).textContent = pct + '%';
+                });
+            }, 100);
+        }
+    </script>
+</body>
+</html>

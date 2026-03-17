@@ -1,0 +1,14 @@
+tensorflow>=2.10.0
+streamlit
+pandas
+numpy
+matplotlib
+scikit-learn
+pillow
+opencv-python
+albumentations
+seaborn
+
+fastapi
+uvicorn
+python-multipart
