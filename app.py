@@ -73,7 +73,7 @@ st.markdown("""
         align-items: center !important;
         justify-content: center !important;
     }
-    .stButton > button {
+    .main-search-row .stButton > button {
         border-radius: 50% !important;
         width: 50px !important;
         height: 50px !important;
@@ -88,9 +88,22 @@ st.markdown("""
         font-size: 24px !important;
         margin-left: -15px !important; /* Move button further right */
     }
-    .stButton > button:hover {
+    .main-search-row .stButton > button:hover {
         background-color: #e9ecef !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    }
+
+    /* Blue styled primary buttons for results */
+    div.stButton > button[kind="primary"] {
+        background-color: #007bff !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #0069d9 !important;
+        border: none !important;
     }
 
     /* Centered Icon Overlay */
@@ -225,28 +238,6 @@ if search_clicked or (uploaded_file is not None and user_description):
                         st.progress(float(prob), text=f"{name}: {prob:.2%}")
                     
                     st.write("Does this result match the patient's record?")
-                    
-                    # Inject custom CSS for these specific buttons
-                    st.markdown("""
-                    <style>
-                    div[data-testid="stButton"] button:has(div:contains("Yes")) {
-                        background-color: #007bff !important;
-                        color: white !important;
-                        border-color: #007bff !important;
-                    }
-                    div[data-testid="stButton"] button:has(div:contains("Yes")):hover {
-                        background-color: #0069d9 !important;
-                    }
-                    div[data-testid="stButton"] button:has(div:contains("No")) {
-                        background-color: #007bff !important;
-                        color: white !important;
-                        border-color: #007bff !important;
-                    }
-                    div[data-testid="stButton"] button:has(div:contains("No")):hover {
-                        background-color: #0069d9 !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
                     
                     btn_col1, btn_col2, btn_spacer = st.columns([1, 1, 4])
                     with btn_col1:
